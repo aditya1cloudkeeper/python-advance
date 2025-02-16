@@ -1,0 +1,36 @@
+Q3. Write a python script which will fetch all the regions in which a customer billed for any resources. Or a customer has any resources.
+
+import boto3
+
+def get_regions_with_ec2_instances():
+    # Initialize a session using Amazon EC2
+    session = boto3.Session()
+    
+    # Retrieve all available regions for EC2
+    ec2_client = session.client('ec2', region_name='us-east-1')
+    regions = [region['RegionName'] for region in ec2_client.describe_regions()['Regions']]
+    
+    active_regions = []
+
+    # Iterate over each region
+    for region in regions:
+        print(f"Checking region: {region}")
+        # Create an EC2 client for the specific region
+        regional_ec2_client = session.client('ec2', region_name=region)
+        
+        # Check for running instances
+        response = regional_ec2_client.describe_instances(
+            Filters=[{'Name': 'instance-state-name', 'Values': ['running']}]
+        )
+        
+        # If there are running instances, add the region to the active list
+        if any(reservation['Instances'] for reservation in response['Reservations']):
+            active_regions.append(region)
+    
+    return active_regions
+
+if __name__ == "__main__":
+    regions_with_resources = get_regions_with_ec2_instances()
+    print("Regions with running EC2 instances:")
+    for region in regions_with_resources:
+        print(region)
