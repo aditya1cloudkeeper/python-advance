@@ -1,0 +1,30 @@
+Q1. Write a python program using boto3 to list all available types of ec2 instances in each region. Make sure the instance type won’t repeat in a region. Put it in a csv with these columns.
+region,instance_type
+
+import boto3
+import csv
+
+# Initialize a session using Amazon EC2
+session = boto3.Session()
+
+# Retrieve all available regions for EC2
+ec2_client = session.client('ec2', region_name='us-east-1')  
+regions = [region['RegionName'] for region in ec2_client.describe_regions()['Regions']]
+
+# Open a CSV file to write the output
+with open('ec2_instance_types.csv', mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['region', 'instance_type'])  
+
+    # Iterate over each region
+    for region in regions:
+        print(f"Processing region: {region}")
+        # Create an EC2 client for the specific region
+        regional_ec2_client = session.client('ec2', region_name=region)
+        
+        # Use a paginator to retrieve all instance types
+        paginator = regional_ec2_client.get_paginator('describe_instance_types')
+        for page in paginator.paginate():
+            for instance_type_info in page['InstanceTypes']:
+                instance_type = instance_type_info['InstanceType']
+                writer.writerow([region, instance_type])  
